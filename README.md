@@ -2,106 +2,118 @@
 
 **A browser-based 3D creation platform.** Build, inspect, edit, generate, and retexture 3D assets in one workspace.
 
-> Project status: early development (0.1.0). The web workspace is the first implementation milestone. AI generation and retexturing are planned modules, not yet represented as working inference services.
+> Project status: active early development. The browser editor and the self-hosted AI job API are implemented. Actual AI inference still requires a separately installed and configured model provider.
 
-## Vision
+## Product vision
 
 UltragenGine3D brings four connected tools into one browser application:
 
-- **Ultragen Engine** — real-time 3D scene viewing and manipulation.
-- **AI Generator** — image-to-3D workflows with exportable meshes.
-- **AI Retexture** — material and texture generation/editing.
-- **Model Editor** — tools for inspecting and editing 3D assets.
+- **Ultragen Engine** — real-time 3D scene viewing, camera navigation, scene hierarchy, transforms, PBR material editing, and GLB/OBJ interchange.
+- **AI Generator** — image-to-3D job submission, status tracking, and GLB artifact import through a self-hosted worker.
+- **AI Retexture** — model retexturing job submission and GLB artifact delivery through the same worker architecture.
+- **Model Editor** — browser-based object selection, transforms, primitive creation, duplication, renaming, and material controls. Sculpting and advanced mesh tools remain in development.
 
-The project aims to avoid credit-based product restrictions. Hosting AI inference still has real compute costs; the architecture will support self-hosted/open-source inference and clearly disclose any hosted limits rather than claiming unlimited free GPU use.
+## Implemented
 
-## Current status
+### Browser editor
+- React, TypeScript, Vite, and Three.js.
+- Real-time WebGL viewport with orbit, zoom, and pan controls.
+- Scene hierarchy with selection, add/remove, duplicate, and rename operations.
+- Translate, rotate, and scale gizmos plus numeric transform controls.
+- PBR base color, metalness, roughness, and opacity controls.
+- GLB/glTF and OBJ import; GLB and OBJ export.
+- Automatic browser-local scene persistence.
 
-### Implemented in the initial workspace
-- React + TypeScript + Vite application.
-- Three.js viewport with a lit sample mesh and grid.
-- Orbit camera controls.
-- Responsive editor shell with scene hierarchy, viewport, and inspector.
-- Initial project documentation and development scripts.
+### AI service foundation
+- FastAPI service with SQLite-backed job records.
+- Image-to-3D and retexture upload endpoints.
+- Job status polling and GLB artifact download.
+- Token-protected worker claim, input, completion, and failure endpoints.
+- Browser interfaces for submitting generation and retexture jobs.
+- No credit balances, daily credits, or trial credits.
 
-### Planned
-- GLB/glTF and OBJ import/export.
-- Scene graph and object selection.
-- Transform gizmos and editable materials.
-- Persistent projects and asset library.
-- Image-to-3D inference integration.
-- AI-assisted PBR texture workflows.
-- Backend API and optional self-hosted inference workers.
+**Important:** No image-to-3D or retexturing model weights are bundled yet. The worker requires a provider adapter implementing the documented interface. The frontend does not pretend a model has run when no inference provider is installed.
 
 ## Technology
 
-| Area | Initial choice |
+| Area | Technology |
 |---|---|
 | Web application | React, TypeScript, Vite |
-| 3D rendering | Three.js |
-| Graphics | WebGL initially; WebGPU where supported and useful |
-| 3D interchange | glTF/GLB first |
-| API (planned) | Python, FastAPI |
-| AI inference (planned) | Pluggable open-source model workers |
+| 3D rendering | Three.js / WebGL |
+| 3D interchange | glTF, GLB, OBJ |
+| API | Python, FastAPI |
+| Job persistence | SQLite |
+| Worker transport | Token-protected HTTP API |
+| AI inference | Pluggable self-hosted provider adapter |
 
-## Getting started
+## Run the web application
 
-Requirements: Node.js 20.19+ or 22.12+, and npm.
+Requirements: **Node.js 26.13.0** and npm.
 
-```bash
-npm install
-npm run dev
-```
+    npm install
+    npm run dev
 
 Open the local URL printed by Vite.
 
-### Other commands
+Other commands:
 
-```bash
-npm run build
-npm run preview
-npm run typecheck
-```
+    npm run typecheck
+    npm run build
+    npm run preview
+
+Optional frontend API configuration: copy the root .env.example and set VITE_API_BASE_URL.
+
+## Run the API
+
+Requirements: Python 3.11 or newer.
+
+    cd server
+    python -m venv .venv
+    # Windows PowerShell:
+    .venv\\Scripts\\Activate.ps1
+    # macOS/Linux:
+    # source .venv/bin/activate
+    pip install -r requirements.txt
+    copy .env.example .env
+    uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+Configure a strong ULTRAGEN_WORKER_TOKEN before running a worker or exposing the API. See server/README.md for the complete API and worker setup.
+
+## Configure an inference worker
+
+The worker loads a provider class through ULTRAGEN_PROVIDER=python.module:ProviderClass. The class must implement:
+
+- generate_image_to_3d(image_path, prompt, output_path)
+- retexture_model(model_path, prompt, output_path)
+
+Both methods must write a valid binary GLB to output_path. Install the model-specific runtime and weights on the GPU worker; do not place provider secrets or model weights in the browser application.
+
+Hosted GPU inference has real operating costs. This project does not promise unlimited free hosted generation. Operators can self-host workers and expose capacity under their own infrastructure and policies.
 
 ## Repository layout
 
-```text
-apps/
-  web/                 # (future) separately deployable web app
-src/
-  engine/              # Three.js scene and viewport
-  App.tsx              # editor workspace
-  main.tsx             # application entry point
-  styles.css           # application design system
-docs/                  # architecture and roadmap
-```
+    src/
+      ai/                 # Browser AI job submission and status UI
+      engine/             # Three.js scene and viewport
+      App.tsx             # Editor workspace and application shell
+      styles.css          # Application design system
+    server/
+      app/                # FastAPI job API
+      tests/              # API lifecycle tests
+      worker.py           # Pluggable inference worker
+      requirements.txt
+    docs/                 # Architecture, AI pipeline, and roadmap
+    .github/workflows/    # Web and server CI
 
-The initial app currently lives at the repository root to keep first-time setup simple. It can be moved into a workspace layout when the API and inference services are introduced.
+## Product principles
 
-## Design principles
-
-1. **Browser-first:** core scene viewing and editing should not require a desktop install.
-2. **Real exports:** generated or edited assets should be downloadable, not locked to a preview.
-3. **Honest AI availability:** distinguish local/self-hosted inference from hosted compute and never disguise credit limits.
-4. **Modular architecture:** renderer, editor tools, asset pipeline, API, and AI workers remain separable.
-5. **Interoperability:** prefer documented, widely supported formats such as glTF/GLB.
-6. **Progressive enhancement:** advanced graphics features must not make the basic workspace unusable on unsupported devices.
-
-## Roadmap
-
-- [x] Initialize the web application and first 3D viewport.
-- [ ] Add scene selection and transform controls.
-- [ ] Add model import and export.
-- [ ] Add material and lighting editors.
-- [ ] Define the asset/project format.
-- [ ] Add API service and storage layer.
-- [ ] Evaluate open-source image-to-3D models and deployment requirements.
-- [ ] Add retexturing pipeline and PBR map inspection.
-
-## Contributing
-
-Contributions are welcome. Keep changes focused, document new modules, and do not commit secrets, model weights, generated user assets, or private datasets.
+1. Browser-first: core editing does not require a desktop installation.
+2. Real exports: assets remain downloadable and interoperable.
+3. No credit system: no paid, trial, or daily generation credits.
+4. Honest AI availability: inference requires an actual configured model and compute.
+5. Modular architecture: renderer, editor, API, and workers remain separable.
+6. Open formats: prioritize glTF/GLB and support OBJ interchange.
 
 ## License
 
-No license has been selected yet. Until a license is added, all rights are reserved by the copyright holder; do not assume the repository is open source.
+MIT. See LICENSE.
