@@ -98,3 +98,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 .ai-error{display:flex;align-items:flex-start;gap:7px;margin:12px 0 0;color:#f39b9b;font-size:10px;line-height:1.5}
 .spin{animation:ai-spin 1s linear infinite}
 @keyframes ai-spin{to{transform:rotate(360deg)}}
+
+/* Environment and lighting inspector */
+.inspector-tabs{height:39px;flex:none}.inspector-tab{min-width:0;font-size:9px;gap:4px;padding:0 3px}.inspector-tab svg{width:13px;height:13px}
