@@ -10,7 +10,7 @@ from typing import Literal
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from PIL import Image
 from pydantic import BaseModel
 
@@ -66,6 +66,7 @@ class WorkerClaim(BaseModel):
     kind: str
     prompt: str
     input_url: str
+    input_name: str
 
 
 class WorkerFailure(BaseModel):
@@ -168,14 +169,14 @@ def get_artifact(job_id: str):
 
 
 @app.post("/api/v1/worker/claim", response_model=WorkerClaim, dependencies=[Depends(require_worker)])
-def claim_job() -> WorkerClaim:
+def claim_job():
     with connect_db() as db:
         db.execute("BEGIN IMMEDIATE")
         row = db.execute("SELECT * FROM jobs WHERE status='queued' ORDER BY created_at LIMIT 1").fetchone()
         if row is None:
-            raise HTTPException(status_code=204, detail="No queued jobs.")
+            return Response(status_code=204)
         db.execute("UPDATE jobs SET status='running',updated_at=? WHERE id=? AND status='queued'", (now(), row["id"]))
-    return WorkerClaim(id=row["id"], kind=row["kind"], prompt=row["prompt"], input_url=f"/api/v1/worker/jobs/{row['id']}/input")
+    return WorkerClaim(id=row["id"], kind=row["kind"], prompt=row["prompt"], input_url=f"/api/v1/worker/jobs/{row['id']}/input", input_name=row["input_name"])
 
 
 @app.get("/api/v1/worker/jobs/{job_id}/input", dependencies=[Depends(require_worker)])
