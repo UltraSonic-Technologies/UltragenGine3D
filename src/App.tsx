@@ -59,7 +59,7 @@ export default function App() {
           <input ref={fileInputRef} type="file" accept=".glb,.gltf,.obj,model/gltf-binary,model/gltf+json,text/plain" hidden onChange={(event) => void importScene(event.target.files?.[0])} />
           <button className="icon-button" title="Import GLB/glTF" onClick={() => fileInputRef.current?.click()}><FolderOpen size={17} /></button>
           <button className="icon-button" title="Remove selected object" onClick={() => viewportRef.current?.removeSelected()} disabled={!selected}><Trash2 size={16} /></button>
-          <button className="button button-muted" onClick={() => setNotice("Project is currently stored in this browser session") }><Cloud size={15} /> Local project</button>
+          <button className="button button-muted" onClick={() => setNotice("Project auto-saves in this browser") }><Cloud size={15} /> Auto-save</button>
           <button className="button button-muted" onClick={() => void viewportRef.current?.exportOBJ().then(() => setNotice("OBJ export complete")).catch((error) => setNotice(error instanceof Error ? error.message : "OBJ export failed"))}><Download size={15} /> Export OBJ</button>
           <button className="button button-primary" onClick={() => void exportScene()}><Download size={15} /> Export GLB</button>
           <button className="icon-button" title="Settings"><Settings2 size={17} /></button>
