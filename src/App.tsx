@@ -33,6 +33,12 @@ export default function App() {
       } else if (key === "y") {
         event.preventDefault();
         viewportRef.current?.redo();
+      } else if (key === "s") {
+        event.preventDefault();
+        void viewportRef.current?.exportProject();
+      } else if (key === "o") {
+        event.preventDefault();
+        projectInputRef.current?.click();
       }
     };
     window.addEventListener("keydown", onKeyDown);
