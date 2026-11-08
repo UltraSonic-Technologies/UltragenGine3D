@@ -32,7 +32,7 @@ UltragenGine3D brings four connected tools into one browser application:
 - Browser interfaces for submitting generation and retexture jobs.
 - No credit balances, daily credits, or trial credits.
 
-**Important:** No image-to-3D or retexturing model weights are bundled yet. The worker requires a provider adapter implementing the documented interface. The frontend does not pretend a model has run when no inference provider is installed.
+**Important:** TripoSR source and weights are not bundled; operators install them separately in a self-hosted worker. TripoSR implements image-to-3D, not retexturing. Retexturing still requires a separate compatible provider. The frontend does not pretend a model has run when no inference provider is installed.
 
 ## Technology
 
@@ -81,7 +81,7 @@ Configure a strong ULTRAGEN_WORKER_TOKEN before running a worker or exposing the
 
 ## Configure an inference worker
 
-The worker loads a provider class through ULTRAGEN_PROVIDER=python.module:ProviderClass. The class must implement:
+The worker defaults to the optional TripoSR adapter. Set TRIPOSR_REPO to its local checkout and follow server/providers/README.md. Custom providers can be loaded through ULTRAGEN_PROVIDER=python.module:ProviderClass. The class must implement:
 
 - generate_image_to_3d(image_path, prompt, output_path)
 - retexture_model(model_path, prompt, output_path)
