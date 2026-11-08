@@ -8,18 +8,21 @@
 - [ ] Verify build in CI
 
 ## Milestone 0.2 — Scene editing
-- [ ] Real scene graph sourced from Three.js
-- [ ] Object selection via raycasting
-- [ ] Transform gizmos
-- [ ] Add/remove primitive meshes
+- [x] Scene graph sourced from Three.js meshes
+- [x] Object selection via raycasting
+- [x] Translate, rotate, and scale gizmos
+- [x] Add box, sphere, cylinder, and torus primitives
+- [x] Remove selected objects
+- [x] Editable transform inspector
 - [ ] Undo/redo command history
+- [ ] Multi-select and grouping
 
 ## Milestone 0.3 — Asset pipeline
-- [ ] GLB/glTF import
-- [ ] GLB export
+- [x] GLB/glTF import
+- [x] GLB export
 - [ ] OBJ import/export
 - [ ] Asset metadata and validation
-- [ ] Texture and geometry resource cleanup
+- [ ] Texture and geometry resource cleanup for imported hierarchies
 
 ## Milestone 0.4 — Materials
 - [ ] Material inspector
@@ -35,7 +38,11 @@
 - [ ] Define retexturing workflow and PBR outputs
 
 ## Later
-- [ ] Projects and asset library
+- [ ] Browser project persistence and asset library
 - [ ] Optional user accounts and cloud sync
 - [ ] Collaboration
 - [ ] WebGPU renderer path where beneficial
+
+## Product constraints
+- No credit-based generation system: no paid, trial, or daily credits.
+- AI inference must use a realistically funded hosted service or user-operated compute. Unlimited hosted GPU generation cannot be promised without sustainable infrastructure.
