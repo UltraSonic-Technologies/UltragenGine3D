@@ -29,7 +29,7 @@
 - [x] Material inspector
 - [x] PBR property editing (base color, metalness, roughness, opacity)
 - [ ] Texture map preview
-- [ ] Environment and lighting controls
+- [x] Environment and lighting controls
 
 ## Milestone 0.5 — AI services
 - [x] Select MIT-licensed TripoSR for the initial image-to-3D adapter\n- [ ] Benchmark model output quality and hardware requirements
