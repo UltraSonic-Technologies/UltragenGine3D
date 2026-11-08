@@ -21,6 +21,7 @@ export default function App() {
   const [tool, setTool] = useState<TransformTool>("select");
   const [showGrid, setShowGrid] = useState(true);
   const [notice, setNotice] = useState("Ready");
+  const [inspectorTab, setInspectorTab] = useState<"object" | "material">("object");
 
   const handleSelection = useCallback((object: SceneObjectInfo | null) => setSelected(object), []);
   const handleScene = useCallback((next: SceneObjectInfo[]) => setObjects(next), []);
@@ -38,6 +39,9 @@ export default function App() {
   const setValue = (axis: "position" | "rotation" | "scale", index: number, raw: string) => {
     const value = Number(raw);
     if (Number.isFinite(value)) viewportRef.current?.setTransform(axis, index, value);
+  };
+  const setMaterialValue = (property: "color" | "metalness" | "roughness" | "opacity", value: string | number) => {
+    viewportRef.current?.setMaterial(property, value);
   };
   const valuesFor = (axis: "position" | "rotation" | "scale") => {
     if (!selected) return [0, 0, 0];
@@ -108,15 +112,33 @@ export default function App() {
 
         <aside className="panel right-panel">
           <div className="panel-heading"><span>INSPECTOR</span><button className="tiny-icon" title="Inspector options"><Settings2 size={15} /></button></div>
-          <div className="inspector-tabs"><button className="inspector-tab active"><SlidersHorizontal size={14} /> Object</button><button className="inspector-tab"><Layers3 size={14} /> Material</button></div>
+          <div className="inspector-tabs">
+            <button className={inspectorTab === "object" ? "inspector-tab active" : "inspector-tab"} onClick={() => setInspectorTab("object")}><SlidersHorizontal size={14} /> Object</button>
+            <button className={inspectorTab === "material" ? "inspector-tab active" : "inspector-tab"} onClick={() => setInspectorTab("material")}><Layers3 size={14} /> Material</button>
+          </div>
           {selected ? <div className="inspector-content">
             <div className="object-title"><span className="object-icon"><Box size={17} /></span><div><strong>{selected.name}</strong><small>{selected.type}</small></div></div>
-            {(["position", "rotation", "scale"] as const).map((axis) => <div className="property-section" key={axis}>
-              <div className="property-heading">{axis.toUpperCase()} <ChevronDown size={13} /></div>
-              <div className="property-row"><span>{axis === "position" ? "Location" : axis === "rotation" ? "Rotation °" : "Scale"}</span><div className="property-values">{valuesFor(axis).map((value, index) => <input key={index} aria-label={`${axis} ${"XYZ"[index]}`} type="number" step={axis === "rotation" ? 1 : 0.1} value={Number(value.toFixed(3))} onChange={(event) => setValue(axis, index, event.target.value)} />)}</div></div>
-            </div>)}
-            <div className="property-section"><div className="property-heading">MESH DATA <ChevronDown size={13} /></div><div className="data-row"><span>Geometry</span><strong>{selected.type}</strong></div><div className="data-row"><span>Vertices</span><strong>{selected.vertices.toLocaleString()}</strong></div><div className="data-row"><span>Faces</span><strong>{selected.faces.toLocaleString()}</strong></div></div>
-            <div className="property-section"><div className="property-heading">MATERIAL <ChevronDown size={13} /></div><div className="material-preview"><span className="material-swatch" /><div><strong>Mesh material</strong><small>Standard · PBR</small></div><button className="tiny-icon"><Settings2 size={14} /></button></div></div>
+            {inspectorTab === "object" ? <>
+              {(["position", "rotation", "scale"] as const).map((axis) => <div className="property-section" key={axis}>
+                <div className="property-heading">{axis.toUpperCase()} <ChevronDown size={13} /></div>
+                <div className="property-row"><span>{axis === "position" ? "Location" : axis === "rotation" ? "Rotation °" : "Scale"}</span><div className="property-values">{valuesFor(axis).map((value, index) => <input key={index} aria-label={`${axis} ${"XYZ"[index]}`} type="number" step={axis === "rotation" ? 1 : 0.1} value={Number(value.toFixed(3))} onChange={(event) => setValue(axis, index, event.target.value)} />)}</div></div>
+              </div>)}
+              <div className="property-section"><div className="property-heading">MESH DATA <ChevronDown size={13} /></div><div className="data-row"><span>Geometry</span><strong>{selected.type}</strong></div><div className="data-row"><span>Vertices</span><strong>{selected.vertices.toLocaleString()}</strong></div><div className="data-row"><span>Faces</span><strong>{selected.faces.toLocaleString()}</strong></div></div>
+            </> : <>
+              <div className="property-section">
+                <div className="property-heading">BASE COLOR</div>
+                <div className="material-control-row"><span>Color</span><input aria-label="Material base color" type="color" value={selected.materialColor.startsWith("#") ? selected.materialColor : "#ffffff"} onChange={(event) => setMaterialValue("color", event.target.value)} /></div>
+              </div>
+              {([
+                ["metalness", "Metalness", selected.metalness],
+                ["roughness", "Roughness", selected.roughness],
+                ["opacity", "Opacity", selected.opacity],
+              ] as const).map(([property, label, value]) => <div className="property-section" key={property}>
+                <div className="material-range-heading"><span>{label}</span><strong>{value.toFixed(2)}</strong></div>
+                <input className="material-range" aria-label={label} type="range" min="0" max="1" step="0.01" value={value} onChange={(event) => setMaterialValue(property, Number(event.target.value))} />
+              </div>)}
+              <p className="material-note">Changes apply directly to the selected mesh and are included in GLB export.</p>
+            </>}
           </div> : <div className="empty-inspector">Select a mesh in the scene to inspect its properties.</div>}
           <div className="panel-foot inspector-foot"><Code2 size={13} /> Live scene properties</div>
         </aside>
