@@ -38,6 +38,7 @@ export interface ViewportHandle {
   importOBJ(file: File): Promise<void>;
   setTransform(axis: "position" | "rotation" | "scale", index: number, value: number): void;
   setMaterial(property: "color" | "metalness" | "roughness" | "opacity", value: string | number): void;
+  setLighting(property: "background" | "hemisphere" | "key" | "fill" | "exposure", value: string | number): void;
   selectObject(id: string): void;
   renameSelected(name: string): void;
   duplicateSelected(): void;
@@ -105,6 +106,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
     scene: THREE.Scene; camera: THREE.PerspectiveCamera; renderer: THREE.WebGLRenderer;
     controls: OrbitControls; gizmo: TransformControls; objects: Map<string, THREE.Mesh>;
     selected: THREE.Mesh | null; grid: THREE.GridHelper;
+    lights: { hemisphere: THREE.HemisphereLight; key: THREE.DirectionalLight; fill: THREE.DirectionalLight };
   } | null>(null);
   const callbacks = useRef({ onSelectionChange, onSceneChange });
   const toolRef = useRef<TransformTool>(tool);
@@ -374,6 +376,15 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       callbacks.current.onSelectionChange?.(toInfo(object));
       recordHistory();
     },
+    setLighting(property, value) {
+      const engine = engineRef.current;
+      if (!engine) return;
+      if (property === "background") engine.scene.background = new THREE.Color(String(value));
+      else if (property === "hemisphere") engine.lights.hemisphere.intensity = THREE.MathUtils.clamp(Number(value), 0, 4);
+      else if (property === "key") engine.lights.key.intensity = THREE.MathUtils.clamp(Number(value), 0, 8);
+      else if (property === "fill") engine.lights.fill.intensity = THREE.MathUtils.clamp(Number(value), 0, 5);
+      else if (property === "exposure") engine.renderer.toneMappingExposure = THREE.MathUtils.clamp(Number(value), 0, 2);
+    },
     setMaterial(property, value) {
       const engine = engineRef.current;
       const object = engine?.selected;
@@ -431,7 +442,8 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
     grid.position.y = -0.015;
     grid.visible = showGrid;
     scene.add(grid);
-    scene.add(new THREE.HemisphereLight("#dceaff", "#252b39", 2));
+    const hemisphereLight = new THREE.HemisphereLight("#dceaff", "#252b39", 2);
+    scene.add(hemisphereLight);
     const keyLight = new THREE.DirectionalLight("#ffffff", 3);
     keyLight.position.set(5, 8, 6);
     scene.add(keyLight);
@@ -455,7 +467,8 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
     floor.position.y = -0.03;
     scene.add(floor);
 
-    engineRef.current = { scene, camera, renderer, controls, gizmo, objects, selected: sample, grid };
+    engineRef.current = { scene, camera, renderer, controls, gizmo, objects, selected: sample, grid,
+      lights: { hemisphere: hemisphereLight, key: keyLight, fill: fillLight } };
     try {
       const saved = localStorage.getItem(PROJECT_STORAGE_KEY);
       if (saved) {
