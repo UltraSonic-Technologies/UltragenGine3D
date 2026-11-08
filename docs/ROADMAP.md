@@ -38,7 +38,8 @@
 - [ ] Define retexturing workflow and PBR outputs
 
 ## Later
-- [ ] Browser project persistence and asset library
+- [x] Automatic browser-local scene persistence
+- [ ] Downloadable project bundles and asset library
 - [ ] Optional user accounts and cloud sync
 - [ ] Collaboration
 - [ ] WebGPU renderer path where beneficial
