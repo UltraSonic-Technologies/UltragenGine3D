@@ -158,10 +158,17 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       const engine = engineRef.current;
       const object = engine?.selected;
       if (!object || !engine) return;
-      const target = axis === "position" ? object.position : axis === "rotation" ? object.rotation : object.scale;
       if (axis === "scale" && value <= 0) return;
-      if (axis === "rotation") target.setComponent(index, THREE.MathUtils.degToRad(value));
-      else target.setComponent(index, value);
+      if (axis === "position" || axis === "scale") {
+        const target = axis === "position" ? object.position : object.scale;
+        target.setComponent(index, value);
+      } else {
+        const radians = THREE.MathUtils.degToRad(value);
+        if (index === 0) object.rotation.x = radians;
+        else if (index === 1) object.rotation.y = radians;
+        else if (index === 2) object.rotation.z = radians;
+        else return;
+      }
       callbacks.current.onSelectionChange?.(toInfo(object));
     },
   }), []);
