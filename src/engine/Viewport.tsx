@@ -58,7 +58,7 @@ const toInfo = (object: THREE.Mesh): SceneObjectInfo => {
     rotation: [object.rotation.x, object.rotation.y, object.rotation.z],
     scale: tuple(object.scale),
     vertices: Math.floor(vertices), faces: Math.floor(faces),
-    materialColor: material.color?.getStyle() ?? "#ffffff",
+    materialColor: material.color ? `#${material.color.getHexString()}` : "#ffffff",
     metalness: material.metalness ?? 0,
     roughness: material.roughness ?? 1,
     opacity: rawMaterial.opacity,
