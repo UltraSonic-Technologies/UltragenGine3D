@@ -32,7 +32,7 @@ export default function App() {
   };
   const importScene = async (file?: File) => {
     if (!file) return;
-    try { await viewportRef.current?.importGLB(file); setNotice(`Imported ${file.name}`); }
+    try { if (file.name.toLowerCase().endsWith(".obj")) await viewportRef.current?.importOBJ(file); else await viewportRef.current?.importGLB(file); setNotice(`Imported ${file.name}`); }
     catch (error) { setNotice(error instanceof Error ? error.message : "Import failed"); }
     finally { if (fileInputRef.current) fileInputRef.current.value = ""; }
   };
@@ -56,10 +56,11 @@ export default function App() {
         <a className="brand" href="#" aria-label="UltragenGine3D home"><span className="brand-mark"><Shapes size={20} /></span><span>ultragen<span className="brand-accent">gine</span>3d</span><span className="version">0.2.0</span></a>
         <div className="project-name"><span className="status-dot" /> Untitled Project <ChevronDown size={14} /></div>
         <div className="top-actions">
-          <input ref={fileInputRef} type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" hidden onChange={(event) => void importScene(event.target.files?.[0])} />
+          <input ref={fileInputRef} type="file" accept=".glb,.gltf,.obj,model/gltf-binary,model/gltf+json,text/plain" hidden onChange={(event) => void importScene(event.target.files?.[0])} />
           <button className="icon-button" title="Import GLB/glTF" onClick={() => fileInputRef.current?.click()}><FolderOpen size={17} /></button>
           <button className="icon-button" title="Remove selected object" onClick={() => viewportRef.current?.removeSelected()} disabled={!selected}><Trash2 size={16} /></button>
           <button className="button button-muted" onClick={() => setNotice("Project is currently stored in this browser session") }><Cloud size={15} /> Local project</button>
+          <button className="button button-muted" onClick={() => void viewportRef.current?.exportOBJ().then(() => setNotice("OBJ export complete")).catch((error) => setNotice(error instanceof Error ? error.message : "OBJ export failed"))}><Download size={15} /> Export OBJ</button>
           <button className="button button-primary" onClick={() => void exportScene()}><Download size={15} /> Export GLB</button>
           <button className="icon-button" title="Settings"><Settings2 size={17} /></button>
         </div>
@@ -143,7 +144,7 @@ export default function App() {
           <div className="panel-foot inspector-foot"><Code2 size={13} /> Live scene properties</div>
         </aside>
       </section>
-      <footer className="app-footer"><span>ULTRAGENGINE3D <b>0.2.0</b></span><span>Built for the browser</span><span><Upload size={12} /> GLB/glTF Import · <Download size={12} /> GLB Export</span></footer>
+      <footer className="app-footer"><span>ULTRAGENGINE3D <b>0.2.0</b></span><span>Built for the browser</span><span><Upload size={12} /> GLB/glTF/OBJ Import · <Download size={12} /> GLB/OBJ Export</span></footer>
     </main>
   );
 }
