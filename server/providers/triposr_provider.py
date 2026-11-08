@@ -26,7 +26,7 @@ class TripoSRProvider:
         self.run_script = self.repo / "run.py"
         if not self.run_script.is_file():
             raise RuntimeError(f"TripoSR run.py was not found in {self.repo}")
-        self.python = os.getenv("TRIPOSR_PYTHON", sys.executable)
+        self.python = os.getenv("TRIPOSR_PYTHON", "").strip() or sys.executable
         self.device = os.getenv("TRIPOSR_DEVICE", "cuda:0")
         self.texture_resolution = int(os.getenv("TRIPOSR_TEXTURE_RESOLUTION", "1024"))
         self.timeout = int(os.getenv("TRIPOSR_TIMEOUT_SECONDS", "1800"))
