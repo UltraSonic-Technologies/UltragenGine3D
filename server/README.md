@@ -42,7 +42,9 @@ Create a Python class implementing these methods:
             # Preserve the mesh and UVs where supported; write a binary GLB.
             ...
 
-Set ULTRAGEN_PROVIDER=my_adapter:MyProvider, install that adapter's model-specific dependencies, then run:
+The repository includes a TripoSR image-to-3D adapter. Set TRIPOSR_REPO to the local upstream checkout and use ULTRAGEN_PROVIDER=providers.triposr_provider:TripoSRProvider. See providers/README.md for the exact setup. TripoSR does not implement retexturing; a separate retexture provider is required.
+
+For a custom adapter, set ULTRAGEN_PROVIDER=my_adapter:MyProvider, install its model-specific dependencies, then run:
 
     python worker.py
 
