@@ -25,8 +25,8 @@
 - [ ] Texture and geometry resource cleanup for imported hierarchies
 
 ## Milestone 0.4 — Materials
-- [ ] Material inspector
-- [ ] PBR property editing
+- [x] Material inspector
+- [x] PBR property editing (base color, metalness, roughness, opacity)
 - [ ] Texture map preview
 - [ ] Environment and lighting controls
 
