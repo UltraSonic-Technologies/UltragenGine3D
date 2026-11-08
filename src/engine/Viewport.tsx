@@ -26,7 +26,7 @@ export interface ViewportHandle {
   removeSelected(): void;
   exportGLB(): Promise<void>;
   importGLB(file: File): Promise<void>;
-  setTransform(axis: "position" | "rotation" | "scale", index: number, value: number): void;
+  setTransform(axis: "position" | "rotation" | "scale", index: number, value: number): void;\n  selectObject(id: string): void;
 }
 
 export interface ViewportProps {
@@ -60,7 +60,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
     controls: OrbitControls; gizmo: TransformControls; objects: Map<string, THREE.Mesh>;
     selected: THREE.Mesh | null; grid: THREE.GridHelper;
   } | null>(null);
-  const callbacks = useRef({ onSelectionChange, onSceneChange });
+  const callbacks = useRef({ onSelectionChange, onSceneChange });\n  const toolRef = useRef<TransformTool>(tool);\n  toolRef.current = tool;
   callbacks.current = { onSelectionChange, onSceneChange };
 
   useImperativeHandle(ref, () => ({
@@ -142,7 +142,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
         URL.revokeObjectURL(url);
       }
     },
-    setTransform(axis, index, value) {
+    selectObject(id) {\n      const engine = engineRef.current;\n      const selected = engine?.objects.get(id) ?? null;\n      if (!engine) return;\n      engine.selected = selected;\n      if (selected && toolRef.current !== "select") engine.gizmo.attach(selected);\n      else engine.gizmo.detach();\n      callbacks.current.onSelectionChange?.(selected ? toInfo(selected) : null);\n    },\n    setTransform(axis, index, value) {
       const engine = engineRef.current;
       const object = engine?.selected;
       if (!object || !engine) return;
@@ -223,7 +223,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       const hits = raycaster.intersectObjects([...objects.values()], false);
       const selected = hits[0]?.object instanceof THREE.Mesh ? hits[0].object : null;
       engineRef.current!.selected = selected;
-      if (selected) gizmo.attach(selected); else gizmo.detach();
+      if (selected && toolRef.current !== "select") gizmo.attach(selected); else gizmo.detach();
       callbacks.current.onSelectionChange?.(selected ? toInfo(selected) : null);
     };
     renderer.domElement.addEventListener("pointerdown", onPointerDown);
