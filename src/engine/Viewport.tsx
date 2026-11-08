@@ -32,6 +32,8 @@ export interface ViewportHandle {
   removeSelected(): void;
   exportGLB(): Promise<void>;
   exportOBJ(): Promise<void>;
+  exportProject(): Promise<void>;
+  importProject(file: File): Promise<void>;
   importGLB(file: File): Promise<void>;
   importOBJ(file: File): Promise<void>;
   setTransform(axis: "position" | "rotation" | "scale", index: number, value: number): void;
@@ -125,11 +127,10 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
     persistObjects(engine.objects.values());
   };
 
-  const applyHistory = (index: number) => {
+  const restoreSnapshot = (snapshot: string) => {
     const engine = engineRef.current;
-    const history = historyRef.current;
-    if (!engine || index < 0 || index >= history.entries.length) return;
-    const restored = new THREE.ObjectLoader().parse(JSON.parse(history.entries[index]));
+    if (!engine) return;
+    const restored = new THREE.ObjectLoader().parse(JSON.parse(snapshot));
     for (const object of engine.objects.values()) {
       object.parent?.remove(object);
       object.geometry.dispose();
@@ -143,10 +144,16 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       if (object instanceof THREE.Mesh) engine.objects.set(object.uuid, object);
     });
     engine.selected = null;
-    history.index = index;
     callbacks.current.onSelectionChange?.(null);
     callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
     persistObjects(engine.objects.values());
+  };
+
+  const applyHistory = (index: number) => {
+    const history = historyRef.current;
+    if (index < 0 || index >= history.entries.length) return;
+    restoreSnapshot(history.entries[index]);
+    history.index = index;
   };
 
   useImperativeHandle(ref, () => ({
@@ -210,6 +217,33 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       anchor.download = "ultragengine3d-scene.glb";
       anchor.click();
       URL.revokeObjectURL(url);
+    },
+    async exportProject() {
+      const engine = engineRef.current;
+      if (!engine) return;
+      const project = {
+        format: "UltragenGine3DProject",
+        version: 1,
+        appVersion: "0.2.0",
+        scene: JSON.parse(serializeObjects(engine.objects.values())),
+      };
+      const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "ultragengine3d-project.ug3dproj";
+      anchor.click();
+      URL.revokeObjectURL(url);
+    },
+    async importProject(file) {
+      const engine = engineRef.current;
+      if (!engine) return;
+      const project = JSON.parse(await file.text()) as { format?: string; version?: number; scene?: object };
+      if (project.format !== "UltragenGine3DProject" || project.version !== 1 || !project.scene) {
+        throw new Error("Unsupported or invalid UltragenGine3D project file.");
+      }
+      restoreSnapshot(JSON.stringify(project.scene));
+      recordHistory();
     },
     async exportOBJ() {
       const engine = engineRef.current;
