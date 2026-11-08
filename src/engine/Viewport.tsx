@@ -124,7 +124,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       engine.scene.add(mesh);
       engine.objects.set(mesh.uuid, mesh);
       engine.selected = mesh;
-      engine.gizmo.attach(mesh);
+      if (toolRef.current !== "select") engine.gizmo.attach(mesh);
       callbacks.current.onSelectionChange?.(toInfo(mesh));
       callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
       persistObjects(engine.objects.values());
@@ -134,7 +134,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       const selected = engine?.selected;
       if (!engine || !selected) return;
       engine.gizmo.detach();
-      engine.scene.remove(selected);
+      selected.parent?.remove(selected);
       selected.geometry.dispose();
       const materials = Array.isArray(selected.material) ? selected.material : [selected.material];
       materials.forEach((material) => material.dispose());
@@ -148,7 +148,12 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       const engine = engineRef.current;
       if (!engine) return;
       const exportScene = new THREE.Scene();
-      for (const object of engine.objects.values()) exportScene.add(object.clone());
+      for (const object of engine.objects.values()) {
+        object.updateWorldMatrix(true, false);
+        const clone = object.clone();
+        object.matrixWorld.decompose(clone.position, clone.quaternion, clone.scale);
+        exportScene.add(clone);
+      }
       const exporter = new GLTFExporter();
       const result = await exporter.parseAsync(exportScene, { binary: true, onlyVisible: true });
       const blob = new Blob([result as ArrayBuffer], { type: "model/gltf-binary" });
@@ -215,7 +220,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
         const first = gltf.scene.getObjectByProperty("isMesh", true);
         if (first instanceof THREE.Mesh) {
           engine.selected = first;
-          engine.gizmo.attach(first);
+          if (toolRef.current !== "select") engine.gizmo.attach(first);
           callbacks.current.onSelectionChange?.(toInfo(first));
         }
         callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
