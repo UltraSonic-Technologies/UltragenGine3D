@@ -40,7 +40,7 @@
 
 ## Later
 - [x] Automatic browser-local scene persistence
-- [ ] Downloadable project bundles and asset library
+- [x] Portable .ug3dproj scene project save/load\n- [ ] Managed asset library and bundled external assets
 - [ ] Optional user accounts and cloud sync
 - [ ] Collaboration
 - [ ] WebGPU renderer path where beneficial
