@@ -6,11 +6,9 @@ import {
   Shapes, SlidersHorizontal, Sparkles, Upload, Trash2,
 } from "lucide-react";
 import Viewport, { type PrimitiveKind, type SceneObjectInfo, type TransformTool, type ViewportHandle } from "./engine/Viewport";
+import AIWorkspace from "./ai/AIWorkspace";
 
 type Workspace = "engine" | "generator" | "retexture" | "editor";
-const workspaceLabels: Record<Workspace, string> = {
-  engine: "Ultragen Engine", generator: "AI Generator", retexture: "AI Retexture", editor: "Model Editor",
-};
 
 export default function App() {
   const viewportRef = useRef<ViewportHandle>(null);
@@ -25,6 +23,11 @@ export default function App() {
 
   const handleSelection = useCallback((object: SceneObjectInfo | null) => setSelected(object), []);
   const handleScene = useCallback((next: SceneObjectInfo[]) => setObjects(next), []);
+  const handleAIArtifact = useCallback(async (file: File) => {
+    await viewportRef.current?.importGLB(file);
+    setWorkspace("engine");
+    setNotice("AI artifact imported: " + file.name);
+  }, []);
   const addPrimitive = (kind: PrimitiveKind) => viewportRef.current?.addPrimitive(kind);
   const exportScene = async () => {
     try { await viewportRef.current?.exportGLB(); setNotice("GLB export complete"); }
@@ -69,9 +72,9 @@ export default function App() {
 
       <nav className="workspace-nav" aria-label="Workspace">
         <button className={workspace === "engine" ? "nav-item active" : "nav-item"} onClick={() => setWorkspace("engine")}><Box size={16} /> Engine</button>
-        <button className={workspace === "generator" ? "nav-item active" : "nav-item"} onClick={() => setWorkspace("generator")}><Sparkles size={16} /> AI Generator <span className="soon">planned</span></button>
-        <button className={workspace === "retexture" ? "nav-item active" : "nav-item"} onClick={() => setWorkspace("retexture")}><Image size={16} /> Retexture <span className="soon">planned</span></button>
-        <button className={workspace === "editor" ? "nav-item active" : "nav-item"} onClick={() => setWorkspace("editor")}><Move3D size={16} /> Model Editor <span className="soon">planned</span></button>
+        <button className={workspace === "generator" ? "nav-item active" : "nav-item"} onClick={() => setWorkspace("generator")}><Sparkles size={16} /> AI Generator <span className="soon">API</span></button>
+        <button className={workspace === "retexture" ? "nav-item active" : "nav-item"} onClick={() => setWorkspace("retexture")}><Image size={16} /> Retexture <span className="soon">API</span></button>
+        <button className={workspace === "editor" ? "nav-item active" : "nav-item"} onClick={() => setWorkspace("editor")}><Move3D size={16} /> Model Editor <span className="soon">tools</span></button>
         <div className="nav-spacer" /><span className="nav-caption">BROWSER WORKSPACE</span>
       </nav>
 
@@ -103,12 +106,12 @@ export default function App() {
             <button className={showGrid ? "tool-button active" : "tool-button"} onClick={() => setShowGrid(!showGrid)} title="Toggle grid"><Grid2X2 size={16} /></button>
             <div className="viewport-spacer" /><span className="viewport-mode">PERSPECTIVE <ChevronDown size={12} /></span><button className="tool-button" title="Viewport help"><CircleHelp size={16} /></button>
           </div>
-          {workspace === "engine" ? <div className="viewport-wrap">
+          {workspace === "engine" || workspace === "editor" ? <div className="viewport-wrap">
             <Viewport ref={viewportRef} showGrid={showGrid} tool={tool} onSelectionChange={handleSelection} onSceneChange={handleScene} />
             <div className="viewport-label"><span className="live-dot" /> REAL-TIME VIEWPORT</div>
             <div className="axis-widget"><span className="axis-y">Y</span><span className="axis-x">X</span><span className="axis-z">Z</span><span className="axis-center" /></div>
             <div className="viewport-hint">Select: click · Orbit: drag · Zoom: scroll · Pan: right-drag</div>
-          </div> : <div className="planned-workspace"><div className="planned-icon">{workspace === "generator" ? <Sparkles size={28} /> : workspace === "retexture" ? <Image size={28} /> : <Move3D size={28} />}</div><h2>{workspaceLabels[workspace]}</h2><p>This module is on the UltragenGine3D roadmap. The 3D Engine workspace is the first active implementation.</p><span className="planned-tag">PLANNED MODULE</span></div>}
+          </div> : <AIWorkspace mode={workspace} onArtifact={handleAIArtifact} />}
           <div className="bottom-status"><span>Scene</span><span>·</span><span>Perspective</span><span className="status-spacer" /><span>WebGL</span><span>·</span><span>{notice}</span></div>
         </section>
 
