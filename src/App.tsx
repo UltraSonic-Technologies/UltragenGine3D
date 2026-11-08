@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Box, ChevronDown, CircleHelp, Cloud, Code2, Copy, Download, Eye, Redo2, Undo2,
+  Box, ChevronDown, CircleHelp, Cloud, Code2, Copy, Download, Eye, Redo2, Save, Undo2,
   FolderOpen, Grid2X2, Image, Layers3, Lightbulb,
   Maximize2, MousePointer2, Move3D, Rotate3D, Settings2,
   Shapes, SlidersHorizontal, Sparkles, Upload, Trash2,
@@ -13,6 +13,7 @@ type Workspace = "engine" | "generator" | "retexture" | "editor";
 export default function App() {
   const viewportRef = useRef<ViewportHandle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const projectInputRef = useRef<HTMLInputElement>(null);
   const [workspace, setWorkspace] = useState<Workspace>("engine");
   const [selected, setSelected] = useState<SceneObjectInfo | null>(null);
   const [objects, setObjects] = useState<SceneObjectInfo[]>([]);
@@ -52,9 +53,19 @@ export default function App() {
   };
   const importScene = async (file?: File) => {
     if (!file) return;
-    try { if (file.name.toLowerCase().endsWith(".obj")) await viewportRef.current?.importOBJ(file); else await viewportRef.current?.importGLB(file); setNotice(`Imported ${file.name}`); }
+    try { if (file.name.toLowerCase().endsWith(".obj")) await viewportRef.current?.importOBJ(file); else await viewportRef.current?.importGLB(file); setNotice("Imported " + file.name); }
     catch (error) { setNotice(error instanceof Error ? error.message : "Import failed"); }
     finally { if (fileInputRef.current) fileInputRef.current.value = ""; }
+  };
+  const exportProject = async () => {
+    try { await viewportRef.current?.exportProject(); setNotice("Project file exported"); }
+    catch (error) { setNotice(error instanceof Error ? error.message : "Project export failed"); }
+  };
+  const importProject = async (file?: File) => {
+    if (!file) return;
+    try { await viewportRef.current?.importProject(file); setNotice("Opened project: " + file.name); }
+    catch (error) { setNotice(error instanceof Error ? error.message : "Project import failed"); }
+    finally { if (projectInputRef.current) projectInputRef.current.value = ""; }
   };
   const setValue = (axis: "position" | "rotation" | "scale", index: number, raw: string) => {
     const value = Number(raw);
@@ -77,6 +88,9 @@ export default function App() {
         <div className="project-name"><span className="status-dot" /> Untitled Project <ChevronDown size={14} /></div>
         <div className="top-actions">
           <input ref={fileInputRef} type="file" accept=".glb,.gltf,.obj,model/gltf-binary,model/gltf+json,text/plain" hidden onChange={(event) => void importScene(event.target.files?.[0])} />
+          <input ref={projectInputRef} type="file" accept=".ug3dproj,application/json" hidden onChange={(event) => void importProject(event.target.files?.[0])} />
+          <button className="icon-button" title="Open UltragenGine3D project" onClick={() => projectInputRef.current?.click()}><FolderOpen size={17} /></button>
+          <button className="icon-button" title="Save project file" onClick={() => void exportProject()}><Save size={16} /></button>
           <button className="icon-button" title="Import GLB/glTF" onClick={() => fileInputRef.current?.click()}><FolderOpen size={17} /></button>
           <button className="icon-button" title="Undo (Ctrl+Z)" onClick={() => viewportRef.current?.undo()}><Undo2 size={16} /></button>
           <button className="icon-button" title="Redo (Ctrl+Shift+Z)" onClick={() => viewportRef.current?.redo()}><Redo2 size={16} /></button>
