@@ -81,3 +81,9 @@ def test_image_upload_rejects_invalid_extension(api_client: TestClient):
 def test_worker_returns_no_content_when_queue_is_empty(api_client: TestClient):
     response = api_client.post("/api/v1/worker/claim", headers={"X-Worker-Token": "test-worker-secret"})
     assert response.status_code == 204
+
+def test_triposr_provider_requires_a_local_model_checkout(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("TRIPOSR_REPO", raising=False)
+    from providers.triposr_provider import TripoSRProvider
+    with pytest.raises(RuntimeError, match="TRIPOSR_REPO"):
+        TripoSRProvider()
