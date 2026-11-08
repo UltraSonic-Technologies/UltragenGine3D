@@ -22,7 +22,7 @@ UltragenGine3D brings four connected tools into one browser application:
 - Translate, rotate, and scale gizmos plus numeric transform controls.
 - PBR base color, metalness, roughness, and opacity controls.
 - GLB/glTF and OBJ import; GLB and OBJ export.
-- Automatic browser-local scene persistence.
+- Automatic browser-local scene persistence.\n- Portable .ug3dproj project file save/load with Ctrl+S and Ctrl+O.
 
 ### AI service foundation
 - FastAPI service with SQLite-backed job records.
