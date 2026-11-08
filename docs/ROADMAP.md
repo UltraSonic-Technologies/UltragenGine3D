@@ -15,6 +15,7 @@
 - [x] Remove selected objects
 - [x] Editable transform inspector
 - [ ] Undo/redo command history
+- [x] Object renaming and duplication
 - [ ] Multi-select and grouping
 
 ## Milestone 0.3 — Asset pipeline
