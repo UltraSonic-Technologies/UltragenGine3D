@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import {
-  Box, ChevronDown, CircleHelp, Cloud, Code2, Download, Eye,
+  Box, ChevronDown, CircleHelp, Cloud, Code2, Copy, Download, Eye,
   FolderOpen, Grid2X2, Image, Layers3, Lightbulb,
   Maximize2, MousePointer2, Move3D, Rotate3D, Settings2,
   Shapes, SlidersHorizontal, Sparkles, Upload, Trash2,
@@ -58,6 +58,7 @@ export default function App() {
         <div className="top-actions">
           <input ref={fileInputRef} type="file" accept=".glb,.gltf,.obj,model/gltf-binary,model/gltf+json,text/plain" hidden onChange={(event) => void importScene(event.target.files?.[0])} />
           <button className="icon-button" title="Import GLB/glTF" onClick={() => fileInputRef.current?.click()}><FolderOpen size={17} /></button>
+          <button className="icon-button" title="Duplicate selected object" onClick={() => viewportRef.current?.duplicateSelected()} disabled={!selected}><Copy size={16} /></button>
           <button className="icon-button" title="Remove selected object" onClick={() => viewportRef.current?.removeSelected()} disabled={!selected}><Trash2 size={16} /></button>
           <button className="button button-muted" onClick={() => setNotice("Project auto-saves in this browser") }><Cloud size={15} /> Auto-save</button>
           <button className="button button-muted" onClick={() => void viewportRef.current?.exportOBJ().then(() => setNotice("OBJ export complete")).catch((error) => setNotice(error instanceof Error ? error.message : "OBJ export failed"))}><Download size={15} /> Export OBJ</button>
@@ -118,7 +119,7 @@ export default function App() {
             <button className={inspectorTab === "material" ? "inspector-tab active" : "inspector-tab"} onClick={() => setInspectorTab("material")}><Layers3 size={14} /> Material</button>
           </div>
           {selected ? <div className="inspector-content">
-            <div className="object-title"><span className="object-icon"><Box size={17} /></span><div><strong>{selected.name}</strong><small>{selected.type}</small></div></div>
+            <div className="object-title"><span className="object-icon"><Box size={17} /></span><div className="object-title-fields"><input className="object-name-input" aria-label="Object name" value={selected.name} onChange={(event) => viewportRef.current?.renameSelected(event.target.value)} /><small>{selected.type}</small></div></div>
             {inspectorTab === "object" ? <>
               {(["position", "rotation", "scale"] as const).map((axis) => <div className="property-section" key={axis}>
                 <div className="property-heading">{axis.toUpperCase()} <ChevronDown size={13} /></div>
