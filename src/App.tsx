@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from "react";
 import {
   Box, ChevronDown, CircleHelp, Cloud, Code2, Download, Eye,
-  FilePlus2, FolderOpen, Grid2X2, Image, Layers3, Lightbulb,
-  Maximize2, MousePointer2, Move3D, Rotate3D, Save, Settings2,
+  FolderOpen, Grid2X2, Image, Layers3, Lightbulb,
+  Maximize2, MousePointer2, Move3D, Rotate3D, Settings2,
   Shapes, SlidersHorizontal, Sparkles, Upload, Trash2,
 } from "lucide-react";
 import Viewport, { type PrimitiveKind, type SceneObjectInfo, type TransformTool, type ViewportHandle } from "./engine/Viewport";
