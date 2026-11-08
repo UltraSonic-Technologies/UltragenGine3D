@@ -39,6 +39,8 @@ export interface ViewportHandle {
   selectObject(id: string): void;
   renameSelected(name: string): void;
   duplicateSelected(): void;
+  undo(): void;
+  redo(): void;
 }
 
 export interface ViewportProps {
@@ -51,16 +53,20 @@ export interface ViewportProps {
 const tuple = (v: THREE.Vector3): [number, number, number] => [v.x, v.y, v.z];
 const PROJECT_STORAGE_KEY = "ultragengine3d.project.v1";
 
+const serializeObjects = (objects: Iterable<THREE.Mesh>): string => {
+  const root = new THREE.Group();
+  for (const object of objects) {
+    object.updateWorldMatrix(true, false);
+    const clone = object.clone();
+    object.matrixWorld.decompose(clone.position, clone.quaternion, clone.scale);
+    root.add(clone);
+  }
+  return JSON.stringify(root.toJSON());
+};
+
 const persistObjects = (objects: Iterable<THREE.Mesh>) => {
   try {
-    const root = new THREE.Group();
-    for (const object of objects) {
-      object.updateWorldMatrix(true, false);
-      const clone = object.clone();
-      object.matrixWorld.decompose(clone.position, clone.quaternion, clone.scale);
-      root.add(clone);
-    }
-    localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(root.toJSON()));
+    localStorage.setItem(PROJECT_STORAGE_KEY, serializeObjects(objects));
   } catch (error) {
     console.warn("UltragenGine3D could not save the local project.", error);
   }
@@ -92,6 +98,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
   { showGrid = true, tool = "select", onSelectionChange, onSceneChange }, ref,
 ) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const historyRef = useRef<{ entries: string[]; index: number }>({ entries: [], index: -1 });
   const engineRef = useRef<{
     scene: THREE.Scene; camera: THREE.PerspectiveCamera; renderer: THREE.WebGLRenderer;
     controls: OrbitControls; gizmo: TransformControls; objects: Map<string, THREE.Mesh>;
@@ -101,6 +108,46 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
   const toolRef = useRef<TransformTool>(tool);
   toolRef.current = tool;
   callbacks.current = { onSelectionChange, onSceneChange };
+
+  const recordHistory = () => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    const snapshot = serializeObjects(engine.objects.values());
+    const history = historyRef.current;
+    if (history.entries[history.index] === snapshot) {
+      persistObjects(engine.objects.values());
+      return;
+    }
+    history.entries = history.entries.slice(0, history.index + 1);
+    history.entries.push(snapshot);
+    if (history.entries.length > 40) history.entries.shift();
+    history.index = history.entries.length - 1;
+    persistObjects(engine.objects.values());
+  };
+
+  const applyHistory = (index: number) => {
+    const engine = engineRef.current;
+    const history = historyRef.current;
+    if (!engine || index < 0 || index >= history.entries.length) return;
+    const restored = new THREE.ObjectLoader().parse(JSON.parse(history.entries[index]));
+    for (const object of engine.objects.values()) {
+      object.parent?.remove(object);
+      object.geometry.dispose();
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      materials.forEach((material) => material.dispose());
+    }
+    engine.objects.clear();
+    engine.gizmo.detach();
+    engine.scene.add(restored);
+    restored.traverse((object) => {
+      if (object instanceof THREE.Mesh) engine.objects.set(object.uuid, object);
+    });
+    engine.selected = null;
+    history.index = index;
+    callbacks.current.onSelectionChange?.(null);
+    callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
+    persistObjects(engine.objects.values());
+  };
 
   useImperativeHandle(ref, () => ({
     addPrimitive(kind) {
@@ -127,7 +174,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       if (toolRef.current !== "select") engine.gizmo.attach(mesh);
       callbacks.current.onSelectionChange?.(toInfo(mesh));
       callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
-      persistObjects(engine.objects.values());
+      recordHistory();
     },
     removeSelected() {
       const engine = engineRef.current;
@@ -142,7 +189,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       engine.selected = null;
       callbacks.current.onSelectionChange?.(null);
       callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
-      persistObjects(engine.objects.values());
+      recordHistory();
     },
     async exportGLB() {
       const engine = engineRef.current;
@@ -202,7 +249,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
         callbacks.current.onSelectionChange?.(toInfo(first));
       }
       callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
-      persistObjects(engine.objects.values());
+      recordHistory();
     },
     async importGLB(file) {
       const engine = engineRef.current;
@@ -224,7 +271,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
           callbacks.current.onSelectionChange?.(toInfo(first));
         }
         callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
-        persistObjects(engine.objects.values());
+        recordHistory();
       } finally {
         URL.revokeObjectURL(url);
       }
@@ -237,7 +284,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       object.name = normalized;
       callbacks.current.onSelectionChange?.(toInfo(object));
       callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
-      persistObjects(engine.objects.values());
+      recordHistory();
     },
     duplicateSelected() {
       const engine = engineRef.current;
@@ -256,7 +303,15 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       if (toolRef.current !== 'select') engine.gizmo.attach(clone);
       callbacks.current.onSelectionChange?.(toInfo(clone));
       callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
-      persistObjects(engine.objects.values());
+      recordHistory();
+    },
+    undo() {
+      const history = historyRef.current;
+      if (history.index > 0) applyHistory(history.index - 1);
+    },
+    redo() {
+      const history = historyRef.current;
+      if (history.index < history.entries.length - 1) applyHistory(history.index + 1);
     },
     selectObject(id) {
       const engine = engineRef.current;
@@ -283,7 +338,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
         else return;
       }
       callbacks.current.onSelectionChange?.(toInfo(object));
-      persistObjects(engine.objects.values());
+      recordHistory();
     },
     setMaterial(property, value) {
       const engine = engineRef.current;
@@ -304,7 +359,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
         material.needsUpdate = true;
       }
       callbacks.current.onSelectionChange?.(toInfo(object));
-      persistObjects(engine.objects.values());
+      recordHistory();
     },
   }), []);
 
@@ -331,7 +386,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
     scene.add(gizmoHelper);
     gizmo.addEventListener("dragging-changed", (event) => {
       controls.enabled = !event.value;
-      if (!event.value && engineRef.current) persistObjects(engineRef.current.objects.values());
+      if (!event.value && engineRef.current) recordHistory();
     });
     gizmo.addEventListener("objectChange", () => {
       const selected = engineRef.current?.selected;
@@ -392,6 +447,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
     } catch (error) {
       console.warn("UltragenGine3D could not restore the local project.", error);
     }
+    recordHistory();
     callbacks.current.onSelectionChange?.(engineRef.current.selected ? toInfo(engineRef.current.selected) : null);
     callbacks.current.onSceneChange?.([...objects.values()].map(toInfo));
 
