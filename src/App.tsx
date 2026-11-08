@@ -20,7 +20,8 @@ export default function App() {
   const [tool, setTool] = useState<TransformTool>("select");
   const [showGrid, setShowGrid] = useState(true);
   const [notice, setNotice] = useState("Ready");
-  const [inspectorTab, setInspectorTab] = useState<"object" | "material">("object");
+  const [inspectorTab, setInspectorTab] = useState<"object" | "material" | "lighting">("object");
+  const [lighting, setLighting] = useState({ background: "#10131b", hemisphere: 2, key: 3, fill: 1.2, exposure: 1.15 });
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -79,6 +80,11 @@ export default function App() {
   };
   const setMaterialValue = (property: "color" | "metalness" | "roughness" | "opacity", value: string | number) => {
     viewportRef.current?.setMaterial(property, value);
+  };
+  const updateLighting = (property: keyof typeof lighting, value: string | number) => {
+    const next = { ...lighting, [property]: value };
+    setLighting(next);
+    viewportRef.current?.setLighting(property, value);
   };
   const valuesFor = (axis: "position" | "rotation" | "scale") => {
     if (!selected) return [0, 0, 0];
@@ -159,8 +165,24 @@ export default function App() {
           <div className="inspector-tabs">
             <button className={inspectorTab === "object" ? "inspector-tab active" : "inspector-tab"} onClick={() => setInspectorTab("object")}><SlidersHorizontal size={14} /> Object</button>
             <button className={inspectorTab === "material" ? "inspector-tab active" : "inspector-tab"} onClick={() => setInspectorTab("material")}><Layers3 size={14} /> Material</button>
+            <button className={inspectorTab === "lighting" ? "inspector-tab active" : "inspector-tab"} onClick={() => setInspectorTab("lighting")}><Lightbulb size={14} /> Lighting</button>
           </div>
-          {selected ? <div className="inspector-content">
+          {inspectorTab === "lighting" ? <div className="inspector-content">
+            <div className="property-section">
+              <div className="property-heading">ENVIRONMENT</div>
+              <div className="material-control-row"><span>Background</span><input aria-label="Environment background color" type="color" value={lighting.background} onChange={(event) => updateLighting("background", event.target.value)} /></div>
+            </div>
+            {([
+              ["hemisphere", "Ambient light", lighting.hemisphere, 4],
+              ["key", "Key light", lighting.key, 8],
+              ["fill", "Fill light", lighting.fill, 5],
+              ["exposure", "Exposure", lighting.exposure, 2],
+            ] as const).map(([property, label, value, max]) => <div className="property-section" key={property}>
+              <div className="material-range-heading"><span>{label}</span><strong>{value.toFixed(2)}</strong></div>
+              <input className="material-range" aria-label={label} type="range" min="0" max={max} step="0.05" value={value} onChange={(event) => updateLighting(property, Number(event.target.value))} />
+            </div>)}
+            <p className="material-note">Lighting changes update the live viewport. These settings are currently session-only and are not included in project files.</p>
+          </div> : selected ? <div className="inspector-content">
             <div className="object-title"><span className="object-icon"><Box size={17} /></span><div className="object-title-fields"><input className="object-name-input" aria-label="Object name" value={selected.name} onChange={(event) => viewportRef.current?.renameSelected(event.target.value)} /><small>{selected.type}</small></div></div>
             {inspectorTab === "object" ? <>
               {(["position", "rotation", "scale"] as const).map((axis) => <div className="property-section" key={axis}>
