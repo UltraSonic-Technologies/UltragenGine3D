@@ -82,7 +82,7 @@ export default function App() {
           </div>
           {workspace === "engine" ? (
             <div className="viewport-wrap">
-              <Viewport />
+              <Viewport showGrid={showGrid} />
               <div className="viewport-label"><span className="live-dot" /> REAL-TIME VIEWPORT</div>
               <div className="axis-widget"><span className="axis-y">Y</span><span className="axis-x">X</span><span className="axis-z">Z</span><span className="axis-center" /></div>
               <div className="viewport-hint">Orbit: drag · Zoom: scroll · Pan: right-drag</div>
