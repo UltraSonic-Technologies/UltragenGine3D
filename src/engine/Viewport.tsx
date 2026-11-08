@@ -47,6 +47,23 @@ export interface ViewportProps {
 }
 
 const tuple = (v: THREE.Vector3): [number, number, number] => [v.x, v.y, v.z];
+const PROJECT_STORAGE_KEY = "ultragengine3d.project.v1";
+
+const persistObjects = (objects: Iterable<THREE.Mesh>) => {
+  try {
+    const root = new THREE.Group();
+    for (const object of objects) {
+      object.updateWorldMatrix(true, false);
+      const clone = object.clone();
+      object.matrixWorld.decompose(clone.position, clone.quaternion, clone.scale);
+      root.add(clone);
+    }
+    localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(root.toJSON()));
+  } catch (error) {
+    console.warn("UltragenGine3D could not save the local project.", error);
+  }
+};
+
 const toInfo = (object: THREE.Mesh): SceneObjectInfo => {
   const geometry = object.geometry;
   const position = geometry.getAttribute("position");
@@ -108,6 +125,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       engine.gizmo.attach(mesh);
       callbacks.current.onSelectionChange?.(toInfo(mesh));
       callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
+      persistObjects(engine.objects.values());
     },
     removeSelected() {
       const engine = engineRef.current;
@@ -122,6 +140,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       engine.selected = null;
       callbacks.current.onSelectionChange?.(null);
       callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
+      persistObjects(engine.objects.values());
     },
     async exportGLB() {
       const engine = engineRef.current;
@@ -176,6 +195,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
         callbacks.current.onSelectionChange?.(toInfo(first));
       }
       callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
+      persistObjects(engine.objects.values());
     },
     async importGLB(file) {
       const engine = engineRef.current;
@@ -197,6 +217,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
           callbacks.current.onSelectionChange?.(toInfo(first));
         }
         callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
+        persistObjects(engine.objects.values());
       } finally {
         URL.revokeObjectURL(url);
       }
@@ -226,6 +247,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
         else return;
       }
       callbacks.current.onSelectionChange?.(toInfo(object));
+      persistObjects(engine.objects.values());
     },
     setMaterial(property, value) {
       const engine = engineRef.current;
@@ -246,6 +268,7 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
         material.needsUpdate = true;
       }
       callbacks.current.onSelectionChange?.(toInfo(object));
+      persistObjects(engine.objects.values());
     },
   }), []);
 
@@ -270,7 +293,10 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
     const gizmo = new TransformControls(camera, renderer.domElement);
     const gizmoHelper = gizmo.getHelper();
     scene.add(gizmoHelper);
-    gizmo.addEventListener("dragging-changed", (event) => { controls.enabled = !event.value; });
+    gizmo.addEventListener("dragging-changed", (event) => {
+      controls.enabled = !event.value;
+      if (!event.value && engineRef.current) persistObjects(engineRef.current.objects.values());
+    });
     gizmo.addEventListener("objectChange", () => {
       const selected = engineRef.current?.selected;
       if (selected) callbacks.current.onSelectionChange?.(toInfo(selected));
@@ -305,7 +331,32 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
     scene.add(floor);
 
     engineRef.current = { scene, camera, renderer, controls, gizmo, objects, selected: sample, grid };
-    callbacks.current.onSelectionChange?.(toInfo(sample));
+    try {
+      const saved = localStorage.getItem(PROJECT_STORAGE_KEY);
+      if (saved) {
+        const restored = new THREE.ObjectLoader().parse(JSON.parse(saved));
+        const restoredMeshes: THREE.Mesh[] = [];
+        restored.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            object.name = object.name || 'Object ' + (restoredMeshes.length + 1);
+            restoredMeshes.push(object);
+          }
+        });
+        if (restoredMeshes.length) {
+          scene.remove(sample);
+          sample.geometry.dispose();
+          (Array.isArray(sample.material) ? sample.material : [sample.material]).forEach((material) => material.dispose());
+          objects.clear();
+          scene.add(restored);
+          restoredMeshes.forEach((object) => objects.set(object.uuid, object));
+          engineRef.current.selected = restoredMeshes[0];
+          if (toolRef.current !== "select") gizmo.attach(restoredMeshes[0]);
+        }
+      }
+    } catch (error) {
+      console.warn("UltragenGine3D could not restore the local project.", error);
+    }
+    callbacks.current.onSelectionChange?.(engineRef.current.selected ? toInfo(engineRef.current.selected) : null);
     callbacks.current.onSceneChange?.([...objects.values()].map(toInfo));
 
     const raycaster = new THREE.Raycaster();
