@@ -5,7 +5,7 @@
 - [x] Three.js viewport
 - [x] Orbit camera controls
 - [x] Dark editor shell
-- [ ] Verify build in CI
+- [x] Verify web build in CI
 
 ## Milestone 0.2 — Scene editing
 - [x] Scene graph sourced from Three.js meshes
@@ -36,7 +36,7 @@
 - [ ] Benchmark hardware requirements and output quality
 - [x] Define asynchronous job API and SQLite job queue
 - [x] Add token-protected worker adapter contract and GLB artifact delivery
-- [ ] Define retexturing workflow and PBR outputs
+- [x] Add generator and retexture submission/status UI\n- [x] Add Python API lifecycle tests\n- [ ] Define model-specific retexturing workflow and PBR outputs
 
 ## Later
 - [x] Automatic browser-local scene persistence
