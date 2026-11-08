@@ -1,6 +1,6 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Box, ChevronDown, CircleHelp, Cloud, Code2, Copy, Download, Eye,
+  Box, ChevronDown, CircleHelp, Cloud, Code2, Copy, Download, Eye, Redo2, Undo2,
   FolderOpen, Grid2X2, Image, Layers3, Lightbulb,
   Maximize2, MousePointer2, Move3D, Rotate3D, Settings2,
   Shapes, SlidersHorizontal, Sparkles, Upload, Trash2,
@@ -20,6 +20,23 @@ export default function App() {
   const [showGrid, setShowGrid] = useState(true);
   const [notice, setNotice] = useState("Ready");
   const [inspectorTab, setInspectorTab] = useState<"object" | "material">("object");
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      const key = event.key.toLowerCase();
+      if (key === "z") {
+        event.preventDefault();
+        if (event.shiftKey) viewportRef.current?.redo();
+        else viewportRef.current?.undo();
+      } else if (key === "y") {
+        event.preventDefault();
+        viewportRef.current?.redo();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const handleSelection = useCallback((object: SceneObjectInfo | null) => setSelected(object), []);
   const handleScene = useCallback((next: SceneObjectInfo[]) => setObjects(next), []);
@@ -61,6 +78,8 @@ export default function App() {
         <div className="top-actions">
           <input ref={fileInputRef} type="file" accept=".glb,.gltf,.obj,model/gltf-binary,model/gltf+json,text/plain" hidden onChange={(event) => void importScene(event.target.files?.[0])} />
           <button className="icon-button" title="Import GLB/glTF" onClick={() => fileInputRef.current?.click()}><FolderOpen size={17} /></button>
+          <button className="icon-button" title="Undo (Ctrl+Z)" onClick={() => viewportRef.current?.undo()}><Undo2 size={16} /></button>
+          <button className="icon-button" title="Redo (Ctrl+Shift+Z)" onClick={() => viewportRef.current?.redo()}><Redo2 size={16} /></button>
           <button className="icon-button" title="Duplicate selected object" onClick={() => viewportRef.current?.duplicateSelected()} disabled={!selected}><Copy size={16} /></button>
           <button className="icon-button" title="Remove selected object" onClick={() => viewportRef.current?.removeSelected()} disabled={!selected}><Trash2 size={16} /></button>
           <button className="button button-muted" onClick={() => setNotice("Project auto-saves in this browser") }><Cloud size={15} /> Auto-save</button>
