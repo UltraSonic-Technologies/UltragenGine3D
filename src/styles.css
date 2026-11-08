@@ -68,3 +68,5 @@ button{font:inherit;color:inherit;cursor:pointer}
 .material-range-heading strong{color:#d6e2f3;font:10px "DM Mono",monospace}
 .material-range{width:100%;accent-color:#318cf5;cursor:pointer}
 .material-note{color:#75839a;font-size:9px;line-height:1.6}
+
+.object-title-fields{min-width:0;flex:1}.object-name-input{width:100%;min-width:0;padding:2px 0;border:0;outline:0;background:transparent;color:#dbe4f2;font-size:11px;font-weight:650}.object-name-input:focus{border-bottom:1px solid #318cf5}.object-title-fields small{display:block;margin-top:3px;color:#75839a;font-size:9px}
