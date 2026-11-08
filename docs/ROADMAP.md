@@ -20,7 +20,7 @@
 ## Milestone 0.3 — Asset pipeline
 - [x] GLB/glTF import
 - [x] GLB export
-- [ ] OBJ import/export
+- [x] OBJ import/export
 - [ ] Asset metadata and validation
 - [ ] Texture and geometry resource cleanup for imported hierarchies
 
