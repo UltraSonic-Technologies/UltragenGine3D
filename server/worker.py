@@ -48,7 +48,7 @@ def main() -> None:
                 work = Path(temp_dir)
                 response = requests.get(api_url + job["input_url"], headers=headers, timeout=120)
                 response.raise_for_status()
-                input_path = work / "input" 
+                input_path = work / ("input" + Path(job["input_name"]).suffix.lower())
                 input_path.write_bytes(response.content)
                 output_path = work / "result.glb"
                 if job["kind"] == "image-to-3d":
