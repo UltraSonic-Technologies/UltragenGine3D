@@ -37,6 +37,8 @@ export interface ViewportHandle {
   setTransform(axis: "position" | "rotation" | "scale", index: number, value: number): void;
   setMaterial(property: "color" | "metalness" | "roughness" | "opacity", value: string | number): void;
   selectObject(id: string): void;
+  renameSelected(name: string): void;
+  duplicateSelected(): void;
 }
 
 export interface ViewportProps {
@@ -221,6 +223,35 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       } finally {
         URL.revokeObjectURL(url);
       }
+    },
+    renameSelected(name) {
+      const engine = engineRef.current;
+      const object = engine?.selected;
+      const normalized = name.trim();
+      if (!engine || !object || !normalized) return;
+      object.name = normalized;
+      callbacks.current.onSelectionChange?.(toInfo(object));
+      callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
+      persistObjects(engine.objects.values());
+    },
+    duplicateSelected() {
+      const engine = engineRef.current;
+      const selected = engine?.selected;
+      if (!engine || !selected) return;
+      const clone = selected.clone();
+      clone.geometry = selected.geometry.clone();
+      const materials = Array.isArray(selected.material) ? selected.material : [selected.material];
+      const clonedMaterials = materials.map((material) => material.clone());
+      clone.material = Array.isArray(selected.material) ? clonedMaterials : clonedMaterials[0];
+      clone.name = selected.name + ' Copy';
+      clone.position.x += 1;
+      engine.scene.add(clone);
+      engine.objects.set(clone.uuid, clone);
+      engine.selected = clone;
+      if (toolRef.current !== 'select') engine.gizmo.attach(clone);
+      callbacks.current.onSelectionChange?.(toInfo(clone));
+      callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
+      persistObjects(engine.objects.values());
     },
     selectObject(id) {
       const engine = engineRef.current;
