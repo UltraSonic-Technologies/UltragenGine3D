@@ -3,10 +3,10 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 export interface ViewportProps {
-  onReady?: (scene: THREE.Scene) => void;
+  showGrid?: boolean;
 }
 
-export default function Viewport({ onReady }: ViewportProps) {
+export default function Viewport({ showGrid = true }: ViewportProps) {
   const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,6 +37,7 @@ export default function Viewport({ onReady }: ViewportProps) {
 
     const grid = new THREE.GridHelper(24, 24, "#354052", "#242c3a");
     grid.position.y = -0.015;
+    grid.visible = showGrid;
     scene.add(grid);
 
     scene.add(new THREE.HemisphereLight("#dceaff", "#252b39", 2.0));
@@ -71,8 +72,6 @@ export default function Viewport({ onReady }: ViewportProps) {
     floor.position.y = -0.03;
     scene.add(floor);
 
-    onReady?.(scene);
-
     const resizeObserver = new ResizeObserver(() => {
       const width = host.clientWidth;
       const height = host.clientHeight;
@@ -95,16 +94,21 @@ export default function Viewport({ onReady }: ViewportProps) {
       cancelAnimationFrame(frame);
       resizeObserver.disconnect();
       controls.dispose();
-      geometry.dispose();
-      material.dispose();
-      floorGeometry.dispose();
-      floorMaterial.dispose();
+      scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          const materials = Array.isArray(object.material)
+            ? object.material
+            : [object.material];
+          materials.forEach((entry) => entry.dispose());
+        }
+      });
       renderer.dispose();
       if (renderer.domElement.parentElement === host) {
         host.removeChild(renderer.domElement);
       }
     };
-  }, [onReady]);
+  }, [showGrid]);
 
   return <div className="viewport-canvas" ref={hostRef} aria-label="3D scene viewport" />;
 }
