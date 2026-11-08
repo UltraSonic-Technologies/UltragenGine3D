@@ -16,7 +16,7 @@ The Python API has automated lifecycle tests in server/tests. The web and server
 
 ## Model provider status
 
-**Inference models are not bundled or deployed yet.** The worker loads a provider class from ULTRAGEN_PROVIDER=python.module:ProviderClass. The class must implement:
+**Inference models are not bundled or deployed yet.** The worker defaults to the optional MIT-licensed TripoSR adapter at server/providers/triposr_provider.py. Set TRIPOSR_REPO to a local upstream checkout. TripoSR implements image-to-3D and writes a UV-textured GLB. It does not implement retexturing. Custom providers can be loaded from ULTRAGEN_PROVIDER=python.module:ProviderClass and must implement:
 
     generate_image_to_3d(image_path, prompt, output_path)
     retexture_model(model_path, prompt, output_path)
