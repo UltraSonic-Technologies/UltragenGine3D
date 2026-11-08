@@ -193,9 +193,11 @@ def get_worker_input(job_id: str):
 
 @app.post("/api/v1/worker/jobs/{job_id}/complete", dependencies=[Depends(require_worker)])
 async def complete_job(job_id: str, artifact: UploadFile = File(...)) -> dict:
-    data = await artifact.read(MAX_UPLOAD_BYTES * 4)
-    if len(data) < 12 or data[:4] != b"glTF":
-        raise HTTPException(status_code=415, detail="Worker output must be a binary GLB file.")
+    data = await artifact.read(MAX_UPLOAD_BYTES * 4 + 1)
+    if len(data) > MAX_UPLOAD_BYTES * 4:
+        raise HTTPException(status_code=413, detail="Worker artifact exceeds the configured size limit.")
+    if len(data) < 12 or data[:4] != b"glTF" or int.from_bytes(data[8:12], "little") != len(data):
+        raise HTTPException(status_code=415, detail="Worker output must be a complete binary GLB file.")
     output_path = OUTPUT_DIR / f"{job_id}.glb"
     output_path.write_bytes(data)
     with connect_db() as db:
