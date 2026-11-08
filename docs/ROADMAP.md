@@ -14,7 +14,7 @@
 - [x] Add box, sphere, cylinder, and torus primitives
 - [x] Remove selected objects
 - [x] Editable transform inspector
-- [ ] Undo/redo command history
+- [x] Undo/redo command history (40-step in-memory history)
 - [x] Object renaming and duplication
 - [ ] Multi-select and grouping
 
@@ -32,9 +32,9 @@
 - [ ] Environment and lighting controls
 
 ## Milestone 0.5 — AI services
-- [ ] Compare open-source image-to-3D models
+- [x] Select MIT-licensed TripoSR for the initial image-to-3D adapter\n- [ ] Benchmark model output quality and hardware requirements
 - [ ] Benchmark hardware requirements and output quality
-- [x] Define asynchronous job API and SQLite job queue
+- [x] Define asynchronous job API and SQLite job queue\n- [x] Add generator and retexture submission/status UI
 - [x] Add token-protected worker adapter contract and GLB artifact delivery
 - [x] Add generator and retexture submission/status UI\n- [x] Add Python API lifecycle tests\n- [ ] Define model-specific retexturing workflow and PBR outputs
 
