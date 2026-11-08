@@ -34,8 +34,8 @@
 ## Milestone 0.5 — AI services
 - [ ] Compare open-source image-to-3D models
 - [ ] Benchmark hardware requirements and output quality
-- [ ] Define asynchronous job API
-- [ ] Add worker adapter and artifact delivery
+- [x] Define asynchronous job API and SQLite job queue
+- [x] Add token-protected worker adapter contract and GLB artifact delivery
 - [ ] Define retexturing workflow and PBR outputs
 
 ## Later
