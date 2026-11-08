@@ -46,6 +46,10 @@ UltragenGine3D brings four connected tools into one browser application:
 | Worker transport | Token-protected HTTP API |
 | AI inference | Pluggable self-hosted provider adapter |
 
+## Deploy to Vercel
+
+See [docs/DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md) for the Vercel frontend deployment steps and separate API/AI worker requirements.
+
 ## Run the web application
 
 Requirements: **Node.js 26.13.0** and npm.
