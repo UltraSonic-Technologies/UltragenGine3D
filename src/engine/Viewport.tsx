@@ -19,6 +19,10 @@ export interface SceneObjectInfo {
   scale: [number, number, number];
   vertices: number;
   faces: number;
+  materialColor: string;
+  metalness: number;
+  roughness: number;
+  opacity: number;
 }
 
 export interface ViewportHandle {
@@ -27,6 +31,7 @@ export interface ViewportHandle {
   exportGLB(): Promise<void>;
   importGLB(file: File): Promise<void>;
   setTransform(axis: "position" | "rotation" | "scale", index: number, value: number): void;
+  setMaterial(property: "color" | "metalness" | "roughness" | "opacity", value: string | number): void;
   selectObject(id: string): void;
 }
 
@@ -43,12 +48,20 @@ const toInfo = (object: THREE.Mesh): SceneObjectInfo => {
   const position = geometry.getAttribute("position");
   const vertices = position?.count ?? 0;
   const faces = geometry.index ? geometry.index.count / 3 : vertices / 3;
+  const rawMaterial = Array.isArray(object.material) ? object.material[0] : object.material;
+  const material = rawMaterial as THREE.Material & {
+    color?: THREE.Color; metalness?: number; roughness?: number;
+  };
   return {
     id: object.uuid, name: object.name, type: geometry.type,
     position: tuple(object.position),
     rotation: [object.rotation.x, object.rotation.y, object.rotation.z],
     scale: tuple(object.scale),
     vertices: Math.floor(vertices), faces: Math.floor(faces),
+    materialColor: material.color?.getStyle() ?? "#ffffff",
+    metalness: material.metalness ?? 0,
+    roughness: material.roughness ?? 1,
+    opacity: rawMaterial.opacity,
   };
 };
 
@@ -168,6 +181,26 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
         else if (index === 1) object.rotation.y = radians;
         else if (index === 2) object.rotation.z = radians;
         else return;
+      }
+      callbacks.current.onSelectionChange?.(toInfo(object));
+    },
+    setMaterial(property, value) {
+      const engine = engineRef.current;
+      const object = engine?.selected;
+      if (!engine || !object) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) {
+        if (property === "color" && "color" in material && material.color instanceof THREE.Color) {
+          material.color.set(value as string);
+        } else if (property === "metalness" && "metalness" in material) {
+          material.metalness = THREE.MathUtils.clamp(Number(value), 0, 1);
+        } else if (property === "roughness" && "roughness" in material) {
+          material.roughness = THREE.MathUtils.clamp(Number(value), 0, 1);
+        } else if (property === "opacity") {
+          material.opacity = THREE.MathUtils.clamp(Number(value), 0, 1);
+          material.transparent = material.opacity < 1;
+        }
+        material.needsUpdate = true;
       }
       callbacks.current.onSelectionChange?.(toInfo(object));
     },
