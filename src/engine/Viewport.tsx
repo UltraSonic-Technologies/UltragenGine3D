@@ -6,6 +6,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+import { OBJExporter } from "three/examples/jsm/exporters/OBJExporter.js";
 
 export type TransformTool = "select" | "move" | "rotate" | "scale";
 export type PrimitiveKind = "box" | "sphere" | "cylinder" | "torus";
@@ -29,7 +31,9 @@ export interface ViewportHandle {
   addPrimitive(kind: PrimitiveKind): void;
   removeSelected(): void;
   exportGLB(): Promise<void>;
+  exportOBJ(): Promise<void>;
   importGLB(file: File): Promise<void>;
+  importOBJ(file: File): Promise<void>;
   setTransform(axis: "position" | "rotation" | "scale", index: number, value: number): void;
   setMaterial(property: "color" | "metalness" | "roughness" | "opacity", value: string | number): void;
   selectObject(id: string): void;
@@ -133,6 +137,45 @@ const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
       anchor.download = "ultragengine3d-scene.glb";
       anchor.click();
       URL.revokeObjectURL(url);
+    },
+    async exportOBJ() {
+      const engine = engineRef.current;
+      if (!engine) return;
+      const exportRoot = new THREE.Group();
+      for (const object of engine.objects.values()) {
+        object.updateWorldMatrix(true, false);
+        const clone = object.clone();
+        object.matrixWorld.decompose(clone.position, clone.quaternion, clone.scale);
+        exportRoot.add(clone);
+      }
+      const exporter = new OBJExporter();
+      const contents = exporter.parse(exportRoot);
+      const blob = new Blob([contents], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "ultragengine3d-scene.obj";
+      anchor.click();
+      URL.revokeObjectURL(url);
+    },
+    async importOBJ(file) {
+      const engine = engineRef.current;
+      if (!engine) return;
+      const loader = new OBJLoader();
+      const root = loader.parse(await file.text());
+      root.traverse((object) => {
+        if (!(object instanceof THREE.Mesh)) return;
+        object.name = object.name || `Imported ${engine.objects.size + 1}`;
+        engine.objects.set(object.uuid, object);
+      });
+      engine.scene.add(root);
+      const first = root.getObjectByProperty("isMesh", true);
+      if (first instanceof THREE.Mesh) {
+        engine.selected = first;
+        if (toolRef.current !== "select") engine.gizmo.attach(first);
+        callbacks.current.onSelectionChange?.(toInfo(first));
+      }
+      callbacks.current.onSceneChange?.([...engine.objects.values()].map(toInfo));
     },
     async importGLB(file) {
       const engine = engineRef.current;
