@@ -16,7 +16,7 @@ class InferenceProvider(Protocol):
 
 
 def load_provider() -> InferenceProvider:
-    target = os.getenv("ULTRAGEN_PROVIDER", "").strip()
+    target = os.getenv("ULTRAGEN_PROVIDER", "providers.triposr_provider:TripoSRProvider").strip()
     if not target or ":" not in target:
         raise RuntimeError(
             "No inference provider is configured. Set ULTRAGEN_PROVIDER=python.module:ProviderClass. "
